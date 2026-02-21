@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WebForge IDE - Ultra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@0.447.0/dist/umd/lucide.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; background: #0f172a; touch-action: none; }
+        .code-editor { font-family: 'Fira Code', monospace; resize: none; tab-size: 4; }
+        
+        .ai-new-content { background-color: rgba(34, 197, 94, 0.15); border-left: 2px solid #22c55e; min-width: 100%; display: block; white-space: pre; }
+        .smart-range-line { background-color: rgba(99, 102, 241, 0.2); border-left: 2px solid #6366f1; min-width: 100%; display: block; white-space: pre; }
+        
+        /* Perfect Alignment for Gutter, Highlights, and Text */
+        #editor-highlights div, .gutter-num { 
+            height: 1.5rem; 
+            line-height: 1.5rem; 
+            font-size: 12px;
+        }
+
+        #gutter {
+            font-family: 'Fira Code', monospace;
+            text-align: right;
+            user-select: none;
+            cursor: pointer;
+        }
+        .gutter-num {
+            transition: color 0.2s;
+        }
+        .gutter-num:hover { color: #6366f1; }
+        .gutter-num-active { color: #6366f1; font-weight: bold; }
+
+        .resizer-h, .resizer-v { z-index: 50; display: flex; align-items: center; justify-content: center; position: relative; touch-action: none; }
+        .resizer-h { width: 24px; margin: 0 -12px; cursor: col-resize; }
+        .resizer-v { height: 24px; margin: -12px 0; cursor: row-resize; }
+        
+        .resizer-h::after { content: ''; width: 4px; height: 40px; background: #334155; border-radius: 4px; }
+        .resizer-v::after { content: ''; height: 4px; width: 40px; background: #334155; border-radius: 4px; }
+        .active-resizer::after { background: #6366f1 !important; }
+
+        .preview-checkerboard {
+            background-color: #f1f5f9;
+            background-image: linear-gradient(45deg, #ffffff 25%, transparent 25%), linear-gradient(-45deg, #ffffff 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ffffff 75%), linear-gradient(-45deg, transparent 75%, #ffffff 75%);
+            background-size: 20px 20px;
+        }
+
+        #resize-shield { display: none; position: fixed; inset: 0; z-index: 9999; cursor: inherit; touch-action: none; }
+        #resize-shield.active { display: block; }
+
+        @keyframes pulse-indigo { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .ai-working { animation: pulse-indigo 1s infinite; pointer-events: none; }
+    </style>
+</head>
+<body class="text-slate-100 flex flex-col h-screen overflow-hidden">
+
+    <div id="resize-shield"></div>
+
+    <header class="h-14 border-b border-slate-700 bg-slate-800 flex items-center justify-between px-4 shrink-0 z-20">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 p-1.5 rounded-lg"><i data-lucide="zap" class="w-3 h-3 text-white"></i></div>
+            <h1 class="font-bold text-sm tracking-tight">WebForge <span class="text-indigo-400">Ultra</span></h1>
+        </div>
+
+        <div class="flex items-center gap-1">
+            <input type="file" id="file-input" class="hidden" accept=".html,.htm,.txt">
+            <button id="undo-btn" class="p-1.5 text-slate-500 hover:text-white transition-colors disabled:opacity-20" disabled title="Undo"><i data-lucide="undo-2" class="w-3.5 h-3.5"></i></button>
+            <button id="redo-btn" class="p-1.5 text-slate-500 hover:text-white transition-colors disabled:opacity-20" disabled title="Redo"><i data-lucide="redo-2" class="w-3.5 h-3.5"></i></button>
+            <button id="format-btn" class="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors" title="AI Format"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></button>
+            <button id="import-btn" class="p-1.5 text-slate-400 hover:text-white transition-colors" title="Import"><i data-lucide="file-up" class="w-3.5 h-3.5"></i></button>
+            <button id="config-btn" class="p-1.5 text-slate-400 hover:text-white transition-colors" title="Settings"><i data-lucide="settings" class="w-3.5 h-3.5"></i></button>
+            <button id="copy-btn" class="p-1.5 text-slate-400 hover:text-white transition-colors" title="Copy"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+            <button id="download-btn" class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-md text-[10px] font-bold text-white transition-all ml-1 uppercase">Export</button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden relative" id="main-container">
+        <section id="pane-editor" class="flex flex-col bg-slate-900 border-r border-slate-800 shrink-0" style="width: 45%;">
+            <div class="p-3 bg-slate-800/30 border-b border-slate-700">
+                <div class="relative">
+                    <textarea id="ai-prompt" placeholder="Ask AI to modify code..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 pr-12 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 min-h-[60px]"></textarea>
+                    <button id="ai-generate-btn" class="absolute right-2 bottom-2 p-2 bg-indigo-600 hover:bg-indigo-500 rounded-md text-white"><i data-lucide="sparkles" class="w-4 h-4"></i></button>
+                </div>
+                <div class="mt-2 flex items-center justify-between">
+                    <div id="ai-status" class="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-2">
+                        <span id="ai-dot" class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                        <span id="ai-status-text">Idle</span>
+                        <span id="smart-range-indicator" class="hidden text-indigo-400 ml-2 animate-pulse">[Smart Range Active]</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="clear-range-btn" class="hidden px-2 py-0.5 bg-slate-700 text-slate-300 border border-slate-600 rounded text-[9px] font-bold uppercase">Clear Range</button>
+                        <button id="finalize-btn" class="hidden px-2 py-0.5 bg-green-600/20 text-green-400 border border-green-500/30 rounded text-[9px] font-bold uppercase">Finalize</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 flex overflow-hidden relative bg-slate-900" id="editor-container">
+                <div class="w-12 pt-4 pb-4 pr-3 text-[12px] text-slate-600 bg-slate-950/50 border-r border-slate-800 shrink-0 overflow-hidden relative">
+                    <div id="gutter" class="absolute top-4 right-3 left-0"></div>
+                </div>
+                <div class="flex-1 relative overflow-hidden">
+                    <textarea id="editor" wrap="off" spellcheck="false" class="code-editor w-full h-full bg-transparent p-4 pl-1 focus:outline-none text-slate-300 text-[12px] leading-[1.5rem] absolute inset-0 z-10 overflow-auto"></textarea>
+                    <div id="editor-highlights-container" class="absolute inset-0 p-4 pl-1 pointer-events-none z-0 overflow-hidden">
+                         <div id="editor-highlights" class="text-[12px] leading-[1.5rem] text-transparent whitespace-pre inline-block min-w-full"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="resizer-h" class="resizer-h"></div>
+
+        <section id="pane-right" class="flex-1 flex flex-col overflow-hidden min-w-0">
+            <div id="pane-preview" class="flex flex-col bg-slate-50 overflow-hidden shrink-0" style="height: 60%;">
+                <div class="bg-white px-3 py-1.5 border-b border-slate-200 flex items-center justify-between shrink-0">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase">Live Preview</span>
+                    <button id="fullscreen-btn" class="text-slate-400 hover:text-indigo-600 p-1"><i data-lucide="maximize" class="w-4 h-4"></i></button>
+                </div>
+                <div id="preview-viewport" class="flex-1 preview-checkerboard overflow-hidden relative flex items-center justify-center">
+                    <div id="preview-wrapper" class="origin-center">
+                        <iframe id="preview-iframe" class="bg-white shadow-xl" style="width: 800px; height: 600px; border: none;" sandbox="allow-scripts"></iframe>
+                    </div>
+                </div>
+            </div>
+            <div id="resizer-v" class="resizer-v"></div>
+            <div id="pane-terminal" class="flex-1 flex flex-col bg-slate-950 overflow-hidden">
+                <div class="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between"><span class="text-[9px] font-bold text-slate-500 uppercase">Logs</span></div>
+                <div id="terminal-output" class="flex-1 overflow-y-auto p-3 text-[11px] font-mono leading-5"></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="config-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h2 class="text-sm font-bold text-white mb-4 uppercase tracking-widest border-b border-slate-700 pb-2">Settings</h2>
+            
+            <div class="mb-4">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Gemini API Key</label>
+                <input type="password" id="user-api-key" placeholder="Enter API key for external use..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <p class="text-[9px] text-slate-500 mt-1 italic">Note: Automatically bypassed in Canvas environment.</p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">AI Model Version</label>
+                <select id="ai-model-select" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <option value="gemini-2.5-flash-preview-09-2025" selected>Gemini 2.5 Flash (Canvas Default)</option>
+                    <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</option>
+                    <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+                    <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">System Instructions</label>
+                <textarea id="base-prompt-input" placeholder="e.g. Always use Tailwind CSS and emojis." class="w-full h-32 bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"></textarea>
+            </div>
+
+            <div class="mt-4 flex justify-end gap-2">
+                <button id="close-config" class="px-4 py-2 text-xs font-bold text-slate-400">CANCEL</button>
+                <button id="save-config" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold uppercase">Arm Rules</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="fs-overlay" class="hidden fixed inset-0 z-[300] flex flex-col bg-white">
+        <div class="bg-slate-900 h-10 flex items-center justify-between px-4 shrink-0">
+            <span class="text-[10px] font-bold text-slate-500 uppercase">Pseudo-Fullscreen Mode</span>
+            <button id="close-fs" class="bg-indigo-600 text-white px-3 py-1 rounded text-[10px] font-bold uppercase">Exit</button>
+        </div>
+        <div id="fs-container" class="flex-1 bg-white overflow-hidden"></div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 transition-all bg-indigo-600 text-white px-5 py-2 rounded-full text-[10px] font-bold z-[400] shadow-xl pointer-events-none">MESSAGE</div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const gutter = document.getElementById('gutter');
+        const editorHighlights = document.getElementById('editor-highlights');
+        const preview = document.getElementById('preview-iframe');
+        const terminal = document.getElementById('terminal-output');
+        const aiBtn = document.getElementById('ai-generate-btn');
+        const formatBtn = document.getElementById('format-btn');
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
+        const finalizeBtn = document.getElementById('finalize-btn');
+        const clearRangeBtn = document.getElementById('clear-range-btn');
+        const smartRangeIndicator = document.getElementById('smart-range-indicator');
+        const shield = document.getElementById('resize-shield');
+
+        let history = []; 
+        let redoStack = [];
+        let basePrompt = "";
+        let aiAbortController = null;
+        
+        let smartRangePoints = [];
+        let currentModel = "gemini-2.5-flash-preview-09-2025";
+        let userProvidedKey = "";
+
+        const getEffectiveApiKey = () => {
+            if (userProvidedKey && userProvidedKey.trim() !== "") return userProvidedKey;
+            return typeof apiKey !== 'undefined' ? apiKey : "";
+        };
+
+        const updateGutter = () => {
+            const lines = editor.value.split('\n');
+            const start = smartRangePoints.length === 2 ? Math.min(smartRangePoints[0], smartRangePoints[1]) : (smartRangePoints.length === 1 ? smartRangePoints[0] : -1);
+            const end = smartRangePoints.length === 2 ? Math.max(smartRangePoints[0], smartRangePoints[1]) : (smartRangePoints.length === 1 ? smartRangePoints[0] : -1);
+
+            gutter.innerHTML = lines.map((_, i) => {
+                const isActive = i >= start && i <= end && start !== -1;
+                return `<div class="gutter-num py-0 ${isActive ? 'gutter-num-active' : ''}" onclick="handleGutterClick(${i})">${i + 1}</div>`;
+            }).join('');
+        };
+
+        window.handleGutterClick = (index) => {
+            if (!finalizeBtn.classList.contains('hidden')) return;
+            if (smartRangePoints.length >= 2) smartRangePoints = [];
+            smartRangePoints.push(index);
+            updateSmartRangeUI();
+            updateGutter();
+            if (smartRangePoints.length === 2) showToast("Range selected");
+        };
+
+        const updatePreview = () => {
+            const code = editor.value;
+            const bridge = '<script>(function(){const s=(t,a)=>{window.parent.postMessage({t,m:Array.from(a).map(x=>typeof x==="object"?JSON.stringify(x):String(x)).join(" ")},"*")};console.log=(...a)=>s("l",a);console.error=(...a)=>s("e",a);window.onerror=(m,u,l)=>s("e",["Error: "+m+" (Line "+l+")"]);})()<\/script>';
+            const blob = new Blob([bridge + code], { type: 'text/html' });
+            preview.src = URL.createObjectURL(blob);
+            setTimeout(scalePreview, 50);
+        };
+
+        const scalePreview = () => {
+            const viewport = document.getElementById('preview-viewport');
+            const wrapper = document.getElementById('preview-wrapper');
+            const pad = 32;
+            const scale = Math.min((viewport.clientWidth - pad) / 800, (viewport.clientHeight - pad) / 600);
+            wrapper.style.transform = `scale(${Math.min(scale, 1.2)})`;
+        };
+
+        const logSys = (msg, isErr = false) => {
+            const d = document.createElement('div');
+            d.className = `py-1 border-b border-white/5 ${isErr ? 'text-red-400' : 'text-slate-400'}`;
+            d.innerHTML = `<span class="text-[9px] font-bold text-slate-600 mr-2 uppercase">${new Date().toLocaleTimeString()}</span>${msg}`;
+            terminal.appendChild(d);
+            terminal.scrollTop = terminal.scrollHeight;
+        };
+
+        const showToast = (m) => {
+            const t = document.getElementById('toast');
+            t.textContent = m; t.classList.replace('translate-y-20', 'translate-y-0'); t.classList.replace('opacity-0', 'opacity-100');
+            setTimeout(() => { t.classList.replace('translate-y-0', 'translate-y-20'); t.classList.replace('opacity-100', 'opacity-0'); }, 2000);
+        };
+
+        const getSmartRangeSelection = () => {
+            if (smartRangePoints.length === 0) return null;
+            const lines = editor.value.split('\n');
+            const start = smartRangePoints.length === 1 ? smartRangePoints[0] : Math.min(smartRangePoints[0], smartRangePoints[1]);
+            const end = smartRangePoints.length === 1 ? smartRangePoints[0] : Math.max(smartRangePoints[0], smartRangePoints[1]);
+            
+            return {
+                start,
+                end,
+                text: lines.slice(start, end + 1).join('\n'),
+                before: lines.slice(0, start).join('\n'),
+                after: lines.slice(end + 1).join('\n')
+            };
+        };
+
+        const updateSmartRangeUI = () => {
+            const lines = editor.value.split('\n');
+            if (smartRangePoints.length === 0) {
+                editorHighlights.innerHTML = "";
+                clearRangeBtn.classList.add('hidden');
+                smartRangeIndicator.classList.add('hidden');
+                updateGutter();
+                return;
+            }
+
+            clearRangeBtn.classList.remove('hidden');
+            smartRangeIndicator.classList.remove('hidden');
+            
+            const start = smartRangePoints.length === 2 ? Math.min(smartRangePoints[0], smartRangePoints[1]) : smartRangePoints[0];
+            const end = smartRangePoints.length === 2 ? Math.max(smartRangePoints[0], smartRangePoints[1]) : smartRangePoints[0];
+
+            editorHighlights.innerHTML = lines.map((l, i) => {
+                const isSelected = i >= start && i <= end;
+                return `<div class="${isSelected ? 'smart-range-line' : ''}">${l.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`;
+            }).join('');
+            updateGutter();
+        };
+
+        clearRangeBtn.onclick = () => {
+            smartRangePoints = [];
+            updateSmartRangeUI();
+        };
+
+        async function fetchWithRetry(model, key, payload) {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: aiAbortController.signal
+            });
+            return res;
+        }
+
+        async function runAI(customPrompt = null, isFormatOnly = false) {
+            const promptInput = document.getElementById('ai-prompt');
+            const prompt = customPrompt || promptInput.value.trim();
+            if (!prompt && !isFormatOnly) return;
+
+            if (aiAbortController) aiAbortController.abort();
+            aiAbortController = new AbortController();
+
+            aiBtn.classList.add('ai-working');
+            document.getElementById('ai-status-text').textContent = isFormatOnly ? "Formatting..." : "Forging...";
+
+            try {
+                const range = getSmartRangeSelection();
+                const contextCode = range ? range.text : editor.value;
+                
+                let systemPrompt = "";
+                if (isFormatOnly) {
+                    systemPrompt = "You are a professional code formatter. Return ONLY the provided code with proper indentation, spacing, and organization. Do NOT change any words, logic, or content. Return raw code only.";
+                } else {
+                    // Prepend basePrompt to ensure it overpowers or anchors the user request.
+                    const mandatoryInstruction = basePrompt ? `${basePrompt}. ` : "";
+                    systemPrompt = `${mandatoryInstruction}Return ONLY raw code. No markdown. ${range ? "Return ONLY replacement code for the provided snippet." : "Return full document."}`;
+                }
+                
+                const payload = {
+                    contents: [{ parts: [{ text: isFormatOnly ? contextCode : `Code:\n${contextCode}\n\nTask: ${prompt}` }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                };
+
+                const key = getEffectiveApiKey();
+                if (!key) throw new Error("API Key missing.");
+
+                // Models to try in order
+                const modelSelect = document.getElementById('ai-model-select');
+                const modelOptions = Array.from(modelSelect.options).map(o => o.value);
+                
+                // Reorder to try current first, then others
+                const modelsToTry = [
+                    currentModel,
+                    ...modelOptions.filter(m => m !== currentModel)
+                ];
+
+                let success = false;
+                for (const model of modelsToTry) {
+                    try {
+                        const res = await fetchWithRetry(model, key, payload);
+                        if (res.ok) {
+                            const data = await res.json();
+                            let out = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (!out) continue;
+                            
+                            // Successful model found, update current selection
+                            if (model !== currentModel) {
+                                currentModel = model;
+                                modelSelect.value = model;
+                                logSys(`Switched to working model: ${model}`);
+                            }
+
+                            out = out.replace(/```(html|javascript|css|xml|markdown)?/gi, "").replace(/```/g, "").trim();
+                            
+                            let final;
+                            if (range && !isFormatOnly) {
+                                final = `${range.before}${range.before ? '\n' : ''}${out}${range.after ? '\n' : ''}${range.after}`;
+                            } else {
+                                final = out;
+                            }
+                            
+                            if (isFormatOnly) {
+                                history.push(editor.value);
+                                redoStack = [];
+                                editor.value = final;
+                                updatePreview();
+                                updateGutter();
+                                showToast("Formatted");
+                            } else {
+                                applyAiResponse(final);
+                            }
+                            success = true; break;
+                        } else {
+                            logSys(`Model ${model} failed, trying next...`);
+                        }
+                    } catch (e) { 
+                        if (e.name === 'AbortError') throw e; 
+                        logSys(`Error with ${model}, skipping...`);
+                    }
+                }
+
+                if (!success) throw new Error("AI request failed across all models.");
+                if (!isFormatOnly) promptInput.value = "";
+                smartRangePoints = [];
+                updateSmartRangeUI();
+            } catch (err) {
+                if (err.name !== 'AbortError') logSys(`Error: ${err.message}`, true);
+            } finally {
+                aiBtn.classList.remove('ai-working');
+                document.getElementById('ai-status-text').textContent = "Idle";
+            }
+        }
+
+        function applyAiResponse(text) {
+            history.push(editor.value);
+            redoStack = []; 
+            updateHistoryButtons();
+            editor.value = text;
+            editorHighlights.innerHTML = text.split('\n').map(l => `<div class="ai-new-content">${l.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('');
+            finalizeBtn.classList.remove('hidden');
+            updatePreview();
+            updateGutter();
+        }
+
+        const updateHistoryButtons = () => {
+            undoBtn.disabled = history.length === 0;
+            redoBtn.disabled = redoStack.length === 0;
+        };
+
+        undoBtn.onclick = () => {
+            if (history.length === 0) return;
+            redoStack.push(editor.value);
+            editor.value = history.pop();
+            editorHighlights.innerHTML = "";
+            finalizeBtn.classList.add('hidden');
+            updatePreview();
+            updateGutter();
+            updateHistoryButtons();
+            showToast("Undone");
+        };
+
+        redoBtn.onclick = () => {
+            if (redoStack.length === 0) return;
+            history.push(editor.value);
+            editor.value = redoStack.pop();
+            updatePreview();
+            updateGutter();
+            updateHistoryButtons();
+            showToast("Redone");
+        };
+
+        editor.oninput = () => {
+            updatePreview();
+            updateGutter();
+            if (!finalizeBtn.classList.contains('hidden')) {
+                editorHighlights.innerHTML = "";
+                finalizeBtn.classList.add('hidden');
+            }
+            if (smartRangePoints.length > 0) {
+                smartRangePoints = [];
+                updateSmartRangeUI();
+            }
+        };
+
+        // Scroll synchronization logic
+        editor.addEventListener('scroll', () => {
+            const top = editor.scrollTop;
+            const left = editor.scrollLeft;
+            gutter.style.transform = `translateY(-${top}px)`;
+            editorHighlights.style.transform = `translate(-${left}px, -${top}px)`;
+        });
+
+        aiBtn.onclick = () => runAI();
+        formatBtn.onclick = () => runAI(null, true);
+
+        document.getElementById('config-btn').onclick = () => {
+            document.getElementById('base-prompt-input').value = basePrompt;
+            document.getElementById('user-api-key').value = userProvidedKey;
+            document.getElementById('ai-model-select').value = currentModel;
+            document.getElementById('config-modal').classList.remove('hidden');
+        };
+
+        document.getElementById('close-config').onclick = () => document.getElementById('config-modal').classList.add('hidden');
+        document.getElementById('save-config').onclick = () => {
+            basePrompt = document.getElementById('base-prompt-input').value;
+            userProvidedKey = document.getElementById('user-api-key').value;
+            currentModel = document.getElementById('ai-model-select').value;
+            document.getElementById('config-modal').classList.add('hidden');
+            showToast("Settings Updated");
+        };
+
+        document.getElementById('copy-btn').onclick = () => {
+            const t = document.createElement('textarea'); 
+            t.value = editor.value; 
+            t.style.position = 'fixed'; t.style.opacity = '0';
+            document.body.appendChild(t);
+            t.select(); 
+            document.execCommand('copy');
+            document.body.removeChild(t);
+            showToast("Code Copied");
+        };
+
+        document.getElementById('import-btn').onclick = () => {
+            if (aiAbortController) {
+                aiAbortController.abort();
+                aiBtn.classList.remove('ai-working');
+                document.getElementById('ai-status-text').textContent = "Idle";
+                logSys("AI Task Terminated due to Import");
+            }
+            document.getElementById('file-input').click();
+        };
+
+        document.getElementById('file-input').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const r = new FileReader();
+            r.onload = (ev) => {
+                history.push(editor.value);
+                redoStack = [];
+                updateHistoryButtons();
+                editor.value = ev.target.result;
+                updatePreview();
+                updateGutter();
+            };
+            r.readAsText(file);
+        };
+
+        document.getElementById('fullscreen-btn').onclick = () => {
+            document.getElementById('fs-container').appendChild(preview);
+            document.getElementById('fs-overlay').classList.remove('hidden');
+            preview.style.width = '100%'; preview.style.height = '100%';
+        };
+
+        document.getElementById('close-fs').onclick = () => {
+            document.getElementById('preview-viewport').querySelector('#preview-wrapper').appendChild(preview);
+            document.getElementById('fs-overlay').classList.add('hidden');
+            preview.style.width = '800px'; preview.style.height = '600px';
+            scalePreview();
+        };
+
+        document.getElementById('finalize-btn').onclick = () => {
+            editorHighlights.innerHTML = "";
+            finalizeBtn.classList.add('hidden');
+            showToast("Finalized");
+        };
+
+        let isResizingH = false, isResizingV = false;
+        const resH = document.getElementById('resizer-h');
+        const resV = document.getElementById('resizer-v');
+
+        const startResize = (type, e) => {
+            if (type === 'h') isResizingH = true; else isResizingV = true;
+            shield.classList.add('active');
+            if(e.cancelable) e.preventDefault();
+        };
+
+        const doResize = (e) => {
+            if (!isResizingH && !isResizingV) return;
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            if (isResizingH) {
+                const p = (cx / window.innerWidth) * 100;
+                if (p > 15 && p < 85) document.getElementById('pane-editor').style.width = `${p}%`;
+            } else {
+                const rect = document.getElementById('pane-right').getBoundingClientRect();
+                const p = ((cy - rect.top) / rect.height) * 100;
+                if (p > 15 && p < 85) document.getElementById('pane-preview').style.height = `${p}%`;
+            }
+            scalePreview();
+        };
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.target === resH) startResize('h', e);
+            if (e.target === resV) startResize('v', e);
+        });
+        window.addEventListener('touchstart', (e) => {
+            if (e.target === resH) startResize('h', e);
+            if (e.target === resV) startResize('v', e);
+        }, { passive: false });
+        window.addEventListener('mousemove', doResize);
+        window.addEventListener('touchmove', doResize, { passive: false });
+        window.addEventListener('mouseup', () => { isResizingH = isResizingV = false; shield.classList.remove('active'); });
+        window.addEventListener('touchend', () => { isResizingH = isResizingV = false; shield.classList.remove('active'); });
+
+        window.addEventListener('message', (e) => { if (e.data.t) logSys(e.data.m, e.data.t === 'e'); });
+        window.addEventListener('resize', scalePreview);
+        window.onload = () => {
+            editor.value = `<!DOCTYPE html>\n<html><head><script src="https://cdn.tailwindcss.com"><\/script></head><body class="bg-slate-50 flex items-center justify-center min-h-[600px]"><div class="max-w-md bg-white p-12 rounded-[2rem] shadow-2xl text-center"><h1 class="text-3xl font-black mb-2">Welcome</h1><p class="text-slate-500">Developing this took me a while, please show your support by referencing the man drinking 500 glasses of petroleum jelly in Kyoto, Japan.</p></div></body></html>`;
+            lucide.createIcons();
+            updatePreview();
+            updateGutter();
+        };
+    </script>
+</body>
+</html>
