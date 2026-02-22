@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebForge IDE - Ultra</title>
+    <title>WebForge IDE - Ultra Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@0.447.0/dist/umd/lucide.min.js"></script>
     <style>
@@ -53,27 +53,39 @@
 
         @keyframes pulse-indigo { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .ai-working { animation: pulse-indigo 1s infinite; pointer-events: none; }
+
+        /* Animations for Modals */
+        .modal-overlay { transition: opacity 0.2s ease-out, backdrop-filter 0.2s ease-out; }
+        .modal-overlay.hidden { opacity: 0; pointer-events: none; }
+        .modal-content { transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out; transform: scale(1); opacity: 1; }
+        .modal-overlay.hidden .modal-content { transform: scale(0.92); opacity: 0; }
+        
+        .text-gradient-ultra {
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
     </style>
 </head>
 <body class="text-slate-100 flex flex-col h-screen overflow-hidden">
 
     <div id="resize-shield"></div>
 
-    <header class="h-14 border-b border-slate-700 bg-slate-800 flex items-center justify-between px-4 shrink-0 z-20">
-        <div class="flex items-center gap-3">
-            <div class="bg-indigo-600 p-1.5 rounded-lg"><i data-lucide="zap" class="w-3 h-3 text-white"></i></div>
-            <h1 class="font-bold text-sm tracking-tight">WebForge <span class="text-indigo-400">Ultra</span></h1>
+    <header class="h-12 border-b border-slate-700 bg-slate-800 flex items-center justify-between px-4 shrink-0 z-20">
+        <div class="flex items-center gap-2">
+            <div class="bg-indigo-600 p-1 rounded-lg"><i data-lucide="zap" class="w-2.5 h-2.5 text-white"></i></div>
+            <h1 class="font-bold text-xs tracking-tight uppercase">WebForge <span class="text-gradient-ultra">Ultra</span></h1>
         </div>
 
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-0.5">
             <input type="file" id="file-input" class="hidden" accept=".html,.htm,.txt">
-            <button id="undo-btn" class="p-1.5 text-slate-500 hover:text-white transition-colors disabled:opacity-20" disabled title="Undo"><i data-lucide="undo-2" class="w-3.5 h-3.5"></i></button>
-            <button id="redo-btn" class="p-1.5 text-slate-500 hover:text-white transition-colors disabled:opacity-20" disabled title="Redo"><i data-lucide="redo-2" class="w-3.5 h-3.5"></i></button>
-            <button id="format-btn" class="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors" title="AI Format"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></button>
-            <button id="import-btn" class="p-1.5 text-slate-400 hover:text-white transition-colors" title="Import"><i data-lucide="file-up" class="w-3.5 h-3.5"></i></button>
-            <button id="config-btn" class="p-1.5 text-slate-400 hover:text-white transition-colors" title="Settings"><i data-lucide="settings" class="w-3.5 h-3.5"></i></button>
-            <button id="copy-btn" class="p-1.5 text-slate-400 hover:text-white transition-colors" title="Copy"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
-            <button id="download-btn" class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-md text-[10px] font-bold text-white transition-all ml-1 uppercase">Export</button>
+            <button id="undo-btn" class="p-1 text-slate-500 hover:text-white transition-colors disabled:opacity-20" disabled title="Undo"><i data-lucide="undo-2" class="w-3 h-3"></i></button>
+            <button id="redo-btn" class="p-1 text-slate-500 hover:text-white transition-colors disabled:opacity-20" disabled title="Redo"><i data-lucide="redo-2" class="w-3 h-3"></i></button>
+            <button id="format-btn" class="p-1 text-slate-400 hover:text-indigo-400 transition-colors" title="AI Format"><i data-lucide="align-left" class="w-3 h-3"></i></button>
+            <button id="import-btn" class="p-1 text-slate-400 hover:text-white transition-colors" title="Import"><i data-lucide="file-up" class="w-3 h-3"></i></button>
+            <button id="config-btn" class="p-1 text-slate-400 hover:text-white transition-colors" title="Settings"><i data-lucide="settings" class="w-3 h-3"></i></button>
+            <button id="copy-btn" class="p-1 text-slate-400 hover:text-white transition-colors" title="Copy"><i data-lucide="copy" class="w-3 h-3"></i></button>
+            <button id="export-trigger-btn" class="flex items-center gap-2 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 rounded-md text-[9px] font-bold text-white transition-all ml-1 uppercase">Export</button>
         </div>
     </header>
 
@@ -92,7 +104,6 @@
                     </div>
                     <div class="flex gap-2">
                         <button id="clear-range-btn" class="hidden px-2 py-0.5 bg-slate-700 text-slate-300 border border-slate-600 rounded text-[9px] font-bold uppercase">Clear Range</button>
-                        <button id="finalize-btn" class="hidden px-2 py-0.5 bg-green-600/20 text-green-400 border border-green-500/30 rounded text-[9px] font-bold uppercase">Finalize</button>
                     </div>
                 </div>
             </div>
@@ -131,26 +142,25 @@
         </section>
     </main>
 
-    <div id="config-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-        <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+    <div id="config-modal" class="hidden modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="modal-content bg-slate-900 border border-slate-700 w-full max-w-md rounded-xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
             <h2 class="text-sm font-bold text-white mb-4 uppercase tracking-widest border-b border-slate-700 pb-2">Settings</h2>
             
             <div class="mb-4">
                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Gemini API Key</label>
-                <input type="password" id="user-api-key" placeholder="Enter API key for external use..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                <p class="text-[9px] text-slate-500 mt-1 italic">Note: Automatically bypassed in Canvas environment.</p>
+                <input type="password" id="user-api-key" placeholder="Enter API key..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <p class="text-[9px] text-red-400 mt-1 italic">Note: API Key is strictly required for generation.</p>
             </div>
 
             <div class="mb-4">
                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">AI Model Version</label>
                 <select id="ai-model-select" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                    <option value="gemini-2.5-flash-preview-09-2025" selected>Gemini 2.5 Flash (Canvas Default)</option>
                     <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</option>
                     <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
                     <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
                     <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                     <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                    <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+                    <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
                 </select>
             </div>
 
@@ -162,6 +172,33 @@
             <div class="mt-4 flex justify-end gap-2">
                 <button id="close-config" class="px-4 py-2 text-xs font-bold text-slate-400">CANCEL</button>
                 <button id="save-config" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold uppercase">Arm Rules</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="export-modal" class="hidden modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="modal-content bg-slate-900 border border-slate-700 w-full max-w-sm rounded-xl p-6 shadow-2xl">
+            <h2 class="text-sm font-bold text-white mb-4 uppercase tracking-widest border-b border-slate-700 pb-2">Export File</h2>
+            
+            <div class="mb-6">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filename (without extension)</label>
+                <input type="text" id="export-filename" value="webforge_project" placeholder="filename" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button id="download-html-btn" class="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors group">
+                    <i data-lucide="file-code" class="w-6 h-6 text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-[10px] font-bold uppercase">HTML File</span>
+                </button>
+                <button id="download-txt-btn" class="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors group">
+                    <i data-lucide="file-text" class="w-6 h-6 text-slate-400 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-[10px] font-bold uppercase">Text File</span>
+                </button>
+            </div>
+
+            <div class="flex justify-end">
+                <button id="close-export" class="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white uppercase transition-colors">Close</button>
             </div>
         </div>
     </div>
@@ -186,7 +223,6 @@
         const formatBtn = document.getElementById('format-btn');
         const undoBtn = document.getElementById('undo-btn');
         const redoBtn = document.getElementById('redo-btn');
-        const finalizeBtn = document.getElementById('finalize-btn');
         const clearRangeBtn = document.getElementById('clear-range-btn');
         const smartRangeIndicator = document.getElementById('smart-range-indicator');
         const shield = document.getElementById('resize-shield');
@@ -197,12 +233,11 @@
         let aiAbortController = null;
         
         let smartRangePoints = [];
-        let currentModel = "gemini-2.5-flash-preview-09-2025";
+        let currentModel = "gemini-3.1-pro-preview";
         let userProvidedKey = "";
 
         const getEffectiveApiKey = () => {
-            if (userProvidedKey && userProvidedKey.trim() !== "") return userProvidedKey;
-            return typeof apiKey !== 'undefined' ? apiKey : "";
+            return userProvidedKey && userProvidedKey.trim() !== "" ? userProvidedKey.trim() : null;
         };
 
         const updateGutter = () => {
@@ -217,7 +252,6 @@
         };
 
         window.handleGutterClick = (index) => {
-            if (!finalizeBtn.classList.contains('hidden')) return;
             if (smartRangePoints.length >= 2) smartRangePoints = [];
             smartRangePoints.push(index);
             updateSmartRangeUI();
@@ -299,16 +333,47 @@
         };
 
         async function fetchWithRetry(model, key, payload) {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                signal: aiAbortController.signal
-            });
-            return res;
+            const select = document.getElementById('ai-model-select');
+            const models = Array.from(select.options).map(o => o.value);
+            let startIndex = models.indexOf(model);
+            if (startIndex === -1) startIndex = 0;
+
+            for (let i = 0; i < models.length; i++) {
+                const attemptModel = models[(startIndex + i) % models.length];
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${attemptModel}:generateContent?key=${key}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        signal: aiAbortController.signal
+                    });
+                    if (res.ok) {
+                        if (attemptModel !== model) {
+                            currentModel = attemptModel;
+                            select.value = attemptModel;
+                            logSys(`Switched to working model: ${attemptModel}`);
+                            showToast(`Switched to ${attemptModel}`);
+                        }
+                        return res;
+                    }
+                    const err = await res.json();
+                    logSys(`Model ${attemptModel} failed: ${err.error?.message || "Unknown error"}. Cycling...`, true);
+                } catch (e) {
+                    if (e.name === 'AbortError') throw e;
+                    logSys(`Connection error with ${attemptModel}. Cycling...`, true);
+                }
+            }
+            throw new Error("All models in the cycle failed. Check your API key or network.");
         }
 
         async function runAI(customPrompt = null, isFormatOnly = false) {
+            const key = getEffectiveApiKey();
+            if (!key) {
+                logSys("API Key Required. Open Settings.", true);
+                document.getElementById('config-btn').click();
+                return;
+            }
+
             const promptInput = document.getElementById('ai-prompt');
             const prompt = customPrompt || promptInput.value.trim();
             if (!prompt && !isFormatOnly) return;
@@ -327,7 +392,6 @@
                 if (isFormatOnly) {
                     systemPrompt = "You are a professional code formatter. Return ONLY the provided code with proper indentation, spacing, and organization. Do NOT change any words, logic, or content. Return raw code only.";
                 } else {
-                    // Prepend basePrompt to ensure it overpowers or anchors the user request.
                     const mandatoryInstruction = basePrompt ? `${basePrompt}. ` : "";
                     systemPrompt = `${mandatoryInstruction}Return ONLY raw code. No markdown. ${range ? "Return ONLY replacement code for the provided snippet." : "Return full document."}`;
                 }
@@ -337,65 +401,31 @@
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 };
 
-                const key = getEffectiveApiKey();
-                if (!key) throw new Error("API Key missing.");
-
-                // Models to try in order
-                const modelSelect = document.getElementById('ai-model-select');
-                const modelOptions = Array.from(modelSelect.options).map(o => o.value);
+                const res = await fetchWithRetry(currentModel, key, payload);
+                const data = await res.json();
+                let out = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!out) throw new Error("Empty AI response.");
                 
-                // Reorder to try current first, then others
-                const modelsToTry = [
-                    currentModel,
-                    ...modelOptions.filter(m => m !== currentModel)
-                ];
-
-                let success = false;
-                for (const model of modelsToTry) {
-                    try {
-                        const res = await fetchWithRetry(model, key, payload);
-                        if (res.ok) {
-                            const data = await res.json();
-                            let out = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                            if (!out) continue;
-                            
-                            // Successful model found, update current selection
-                            if (model !== currentModel) {
-                                currentModel = model;
-                                modelSelect.value = model;
-                                logSys(`Switched to working model: ${model}`);
-                            }
-
-                            out = out.replace(/```(html|javascript|css|xml|markdown)?/gi, "").replace(/```/g, "").trim();
-                            
-                            let final;
-                            if (range && !isFormatOnly) {
-                                final = `${range.before}${range.before ? '\n' : ''}${out}${range.after ? '\n' : ''}${range.after}`;
-                            } else {
-                                final = out;
-                            }
-                            
-                            if (isFormatOnly) {
-                                history.push(editor.value);
-                                redoStack = [];
-                                editor.value = final;
-                                updatePreview();
-                                updateGutter();
-                                showToast("Formatted");
-                            } else {
-                                applyAiResponse(final);
-                            }
-                            success = true; break;
-                        } else {
-                            logSys(`Model ${model} failed, trying next...`);
-                        }
-                    } catch (e) { 
-                        if (e.name === 'AbortError') throw e; 
-                        logSys(`Error with ${model}, skipping...`);
-                    }
+                out = out.replace(/```(html|javascript|css|xml|markdown)?/gi, "").replace(/```/g, "").trim();
+                
+                let final;
+                if (range && !isFormatOnly) {
+                    final = `${range.before}${range.before ? '\n' : ''}${out}${range.after ? '\n' : ''}${range.after}`;
+                } else {
+                    final = out;
+                }
+                
+                if (isFormatOnly) {
+                    history.push(editor.value);
+                    redoStack = [];
+                    editor.value = final;
+                    updatePreview();
+                    updateGutter();
+                    showToast("Formatted");
+                } else {
+                    applyAiResponse(final);
                 }
 
-                if (!success) throw new Error("AI request failed across all models.");
                 if (!isFormatOnly) promptInput.value = "";
                 smartRangePoints = [];
                 updateSmartRangeUI();
@@ -412,10 +442,10 @@
             redoStack = []; 
             updateHistoryButtons();
             editor.value = text;
-            editorHighlights.innerHTML = text.split('\n').map(l => `<div class="ai-new-content">${l.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('');
-            finalizeBtn.classList.remove('hidden');
+            editorHighlights.innerHTML = "";
             updatePreview();
             updateGutter();
+            showToast("Changes Applied Automatically");
         }
 
         const updateHistoryButtons = () => {
@@ -428,7 +458,6 @@
             redoStack.push(editor.value);
             editor.value = history.pop();
             editorHighlights.innerHTML = "";
-            finalizeBtn.classList.add('hidden');
             updatePreview();
             updateGutter();
             updateHistoryButtons();
@@ -448,17 +477,12 @@
         editor.oninput = () => {
             updatePreview();
             updateGutter();
-            if (!finalizeBtn.classList.contains('hidden')) {
-                editorHighlights.innerHTML = "";
-                finalizeBtn.classList.add('hidden');
-            }
             if (smartRangePoints.length > 0) {
                 smartRangePoints = [];
                 updateSmartRangeUI();
             }
         };
 
-        // Scroll synchronization logic
         editor.addEventListener('scroll', () => {
             const top = editor.scrollTop;
             const left = editor.scrollLeft;
@@ -469,19 +493,28 @@
         aiBtn.onclick = () => runAI();
         formatBtn.onclick = () => runAI(null, true);
 
+        const openModal = (id) => {
+            const m = document.getElementById(id);
+            m.classList.remove('hidden');
+        };
+        const closeModal = (id) => {
+            const m = document.getElementById(id);
+            m.classList.add('hidden');
+        };
+
         document.getElementById('config-btn').onclick = () => {
             document.getElementById('base-prompt-input').value = basePrompt;
             document.getElementById('user-api-key').value = userProvidedKey;
             document.getElementById('ai-model-select').value = currentModel;
-            document.getElementById('config-modal').classList.remove('hidden');
+            openModal('config-modal');
         };
 
-        document.getElementById('close-config').onclick = () => document.getElementById('config-modal').classList.add('hidden');
+        document.getElementById('close-config').onclick = () => closeModal('config-modal');
         document.getElementById('save-config').onclick = () => {
             basePrompt = document.getElementById('base-prompt-input').value;
             userProvidedKey = document.getElementById('user-api-key').value;
             currentModel = document.getElementById('ai-model-select').value;
-            document.getElementById('config-modal').classList.add('hidden');
+            closeModal('config-modal');
             showToast("Settings Updated");
         };
 
@@ -534,11 +567,31 @@
             scalePreview();
         };
 
-        document.getElementById('finalize-btn').onclick = () => {
-            editorHighlights.innerHTML = "";
-            finalizeBtn.classList.add('hidden');
-            showToast("Finalized");
+        // Export Logic
+        const exportTriggerBtn = document.getElementById('export-trigger-btn');
+        const exportFilenameInput = document.getElementById('export-filename');
+        const closeExportBtn = document.getElementById('close-export');
+        const downloadHtmlBtn = document.getElementById('download-html-btn');
+        const downloadTxtBtn = document.getElementById('download-txt-btn');
+
+        exportTriggerBtn.onclick = () => openModal('export-modal');
+        closeExportBtn.onclick = () => closeModal('export-modal');
+
+        const triggerDownload = (ext) => {
+            const filename = exportFilenameInput.value.trim() || 'webforge_project';
+            const blob = new Blob([editor.value], { type: ext === 'html' ? 'text/html' : 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}.${ext}`;
+            a.click();
+            URL.revokeObjectURL(url);
+            closeModal('export-modal');
+            showToast(`Exported as ${ext.toUpperCase()}`);
         };
+
+        downloadHtmlBtn.onclick = () => triggerDownload('html');
+        downloadTxtBtn.onclick = () => triggerDownload('txt');
 
         let isResizingH = false, isResizingV = false;
         const resH = document.getElementById('resizer-h');
@@ -581,11 +634,11 @@
         window.addEventListener('message', (e) => { if (e.data.t) logSys(e.data.m, e.data.t === 'e'); });
         window.addEventListener('resize', scalePreview);
         window.onload = () => {
-            editor.value = `<!DOCTYPE html>\n<html><head><script src="https://cdn.tailwindcss.com"><\/script></head><body class="bg-slate-50 flex items-center justify-center min-h-[600px]"><div class="max-w-md bg-white p-12 rounded-[2rem] shadow-2xl text-center"><h1 class="text-3xl font-black mb-2">Welcome</h1><p class="text-slate-500">Developing this took me a while, please show your support by referencing the man drinking 500 glasses of petroleum jelly in Kyoto, Japan.</p></div></body></html>`;
+            editor.value = `<!DOCTYPE html>\n<html><head><script src="https://cdn.tailwindcss.com"><\/script></head><body class="bg-slate-50 flex items-center justify-center min-h-[600px]"><div class="max-w-md bg-white p-12 rounded-[2rem] shadow-2xl text-center"><h1 class="text-3xl font-black mb-2">WebForge Engine Ready</h1><p class="text-slate-500">2026 Model Support Active.</p></div></body></html>`;
             lucide.createIcons();
             updatePreview();
             updateGutter();
         };
     </script>
 </body>
-</html>
+    </html>
