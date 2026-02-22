@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebForge - Ultra</title>
+    <title>WebForge IDE - Ultra Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@0.447.0/dist/umd/lucide.min.js"></script>
     <!-- Use Compat version for global 'firebase' object support -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <style>
+    <style id="theme-styles">
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
         
         body { font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; background: #0f172a; touch-action: none; }
@@ -67,6 +67,12 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
+        /* Dynamic Theme Classes */
+        .theme-bg-accent { background-color: #4f46e5; }
+        .theme-bg-accent:hover { background-color: #4338ca; }
+        .theme-text-accent { color: #6366f1; }
+        .theme-border-accent { border-color: #6366f1; }
     </style>
 </head>
 <body class="text-slate-100 flex flex-col h-screen overflow-hidden">
@@ -75,8 +81,8 @@
 
     <header class="h-12 border-b border-slate-700 bg-slate-800 flex items-center justify-between px-4 shrink-0 z-20">
         <div class="flex items-center gap-2">
-            <div class="bg-indigo-600 p-1 rounded-lg"><i data-lucide="zap" class="w-2.5 h-2.5 text-white"></i></div>
-            <h1 class="font-bold text-xs tracking-tight uppercase">WebForge <span class="text-gradient-ultra">Ultra</span></h1>
+            <div id="header-icon" class="bg-indigo-600 p-1 rounded-lg theme-bg-accent"><i data-lucide="zap" class="w-2.5 h-2.5 text-white"></i></div>
+            <h1 class="font-bold text-xs tracking-tight uppercase">WebForge <span id="title-gradient" class="text-gradient-ultra">Ultra</span></h1>
         </div>
 
         <div class="flex items-center gap-0.5">
@@ -87,16 +93,16 @@
             <button id="import-btn" class="p-1 text-slate-400 hover:text-white transition-colors" title="Import"><i data-lucide="file-up" class="w-3 h-3"></i></button>
             <button id="config-btn" class="p-1 text-slate-400 hover:text-white transition-colors" title="Settings"><i data-lucide="settings" class="w-3 h-3"></i></button>
             <button id="copy-btn" class="p-1 text-slate-400 hover:text-white transition-colors" title="Copy"><i data-lucide="copy" class="w-3 h-3"></i></button>
-            <button id="export-trigger-btn" class="flex items-center gap-2 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 rounded-md text-[9px] font-bold text-white transition-all ml-1 uppercase">Export</button>
+            <button id="export-trigger-btn" class="theme-export-override flex items-center gap-2 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 rounded-md text-[9px] font-bold text-white transition-all ml-1 uppercase theme-bg-accent">Export</button>
         </div>
     </header>
 
     <main class="flex-1 flex overflow-hidden relative" id="main-container">
         <section id="pane-editor" class="flex flex-col bg-slate-900 border-r border-slate-800 shrink-0" style="width: 45%;">
             <div class="p-3 bg-slate-800/30 border-b border-slate-700">
-                <div class="relative">
-                    <textarea id="ai-prompt" placeholder="Ask AI to modify code..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 pr-12 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 min-h-[60px]"></textarea>
-                    <button id="ai-generate-btn" class="absolute right-2 bottom-2 p-2 bg-indigo-600 hover:bg-indigo-500 rounded-md text-white"><i data-lucide="sparkles" class="w-4 h-4"></i></button>
+                <div class="relative flex items-center">
+                    <textarea id="ai-prompt" placeholder="Ask AI to modify code..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 pr-14 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 min-h-[60px]"></textarea>
+                    <button id="ai-generate-btn" class="theme-ai-send-override absolute right-2 p-2 bg-indigo-600 hover:bg-indigo-500 rounded-md text-white theme-bg-accent flex items-center justify-center"><i data-lucide="sparkles" class="w-4 h-4"></i></button>
                 </div>
                 <div class="mt-2 flex items-center justify-between">
                     <div id="ai-status" class="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-2">
@@ -157,12 +163,12 @@
             </div>
 
             <div class="mb-6 p-3 bg-slate-950/50 rounded-lg border border-slate-800">
-                <label class="block text-[10px] font-bold text-indigo-400 uppercase mb-2">Cloud Vault (Auto-Save Keys)</label>
+                <label class="block text-[10px] font-bold text-indigo-400 uppercase mb-2 theme-engine-label">Theme Engine (Input to Change UI)</label>
                 <div class="flex gap-2">
-                    <input type="text" id="vault-code" placeholder="Enter a secret code..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-[10px] text-slate-200 focus:outline-none focus:border-indigo-500">
-                    <button id="sync-vault-btn" class="px-3 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-[10px] font-bold uppercase transition-all">Sync</button>
+                    <input type="text" id="vault-code" placeholder="e.g. America, Cyberpunk, Pickle..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-[10px] text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <button id="sync-vault-btn" class="px-3 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-[10px] font-bold uppercase transition-all theme-bg-accent">Update Theme</button>
                 </div>
-                <p class="text-[8px] text-slate-500 mt-2">Enter any code to save or retrieve your settings from the cloud.</p>
+                <p class="text-[8px] text-slate-500 mt-2 theme-engine-desc">Enter a concept or color to apply a new theme to the IDE.</p>
             </div>
 
             <div class="mb-4">
@@ -184,7 +190,7 @@
 
             <div class="mt-4 flex justify-end gap-2">
                 <button id="close-config" class="px-4 py-2 text-xs font-bold text-slate-400">CANCEL</button>
-                <button id="save-config" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold uppercase">Arm Rules</button>
+                <button id="save-config" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold uppercase theme-bg-accent">Arm Rules</button>
             </div>
         </div>
     </div>
@@ -201,7 +207,7 @@
 
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <button id="download-html-btn" class="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors group">
-                    <i data-lucide="file-code" class="w-6 h-6 text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                    <i data-lucide="file-code" class="w-6 h-6 text-indigo-400 group-hover:scale-110 transition-transform theme-text-accent"></i>
                     <span class="text-[10px] font-bold uppercase">HTML File</span>
                 </button>
                 <button id="download-txt-btn" class="flex flex-col items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors group">
@@ -219,12 +225,12 @@
     <div id="fs-overlay" class="hidden fixed inset-0 z-[300] flex flex-col bg-white">
         <div class="bg-slate-900 h-10 flex items-center justify-between px-4 shrink-0">
             <span class="text-[10px] font-bold text-slate-500 uppercase">Pseudo-Fullscreen Mode</span>
-            <button id="close-fs" class="bg-indigo-600 text-white px-3 py-1 rounded text-[10px] font-bold uppercase">Exit</button>
+            <button id="close-fs" class="bg-indigo-600 text-white px-3 py-1 rounded text-[10px] font-bold uppercase theme-bg-accent">Exit</button>
         </div>
         <div id="fs-container" class="flex-1 bg-white overflow-hidden"></div>
     </div>
 
-    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 transition-all bg-indigo-600 text-white px-5 py-2 rounded-full text-[10px] font-bold z-[400] shadow-xl pointer-events-none">MESSAGE</div>
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 transition-all bg-indigo-600 text-white px-5 py-2 rounded-full text-[10px] font-bold z-[400] shadow-xl pointer-events-none theme-bg-accent">MESSAGE</div>
 
     <script>
         const editor = document.getElementById('editor');
@@ -250,18 +256,12 @@
         let userProvidedKey = "";
         let currentVaultCode = "";
 
-        // ENVIRONMENT GUARDS: Safely initialize Firebase and external variables
-        let app, auth, db, appId;
+        // Safely initialize external variables
+        let appId;
         try {
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-            if (firebaseConfig) {
-                app = firebase.initializeApp(firebaseConfig);
-                auth = firebase.auth();
-                db = firebase.firestore();
-            }
             appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         } catch (e) {
-            console.warn("Cloud environment variables missing. Firebase features disabled.", e);
+            appId = 'default-app-id';
         }
 
         const getEffectiveApiKey = () => {
@@ -324,8 +324,7 @@
             const end = smartRangePoints.length === 1 ? smartRangePoints[0] : Math.max(smartRangePoints[0], smartRangePoints[1]);
             
             return {
-                start,
-                end,
+                start, end,
                 text: lines.slice(start, end + 1).join('\n'),
                 before: lines.slice(0, start).join('\n'),
                 after: lines.slice(end + 1).join('\n')
@@ -373,7 +372,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload),
-                        signal: aiAbortController.signal
+                        signal: aiAbortController?.signal
                     });
                     if (res.ok) {
                         if (attemptModel !== model) {
@@ -544,68 +543,84 @@
             userProvidedKey = document.getElementById('user-api-key').value;
             currentModel = document.getElementById('ai-model-select').value;
             currentVaultCode = document.getElementById('vault-code').value;
-            
             localStorage.setItem('webforge_vault_code', currentVaultCode);
-            
             closeModal('config-modal');
             showToast("Settings Updated");
         };
 
-        // Vault Logic
+        // THEME AI ENGINE
         document.getElementById('sync-vault-btn').onclick = async () => {
-            const code = document.getElementById('vault-code').value.trim();
-            if (!code) {
-                showToast("Enter a vault code first");
+            const themeQuery = document.getElementById('vault-code').value.trim();
+            const key = getEffectiveApiKey();
+            const selectedModel = document.getElementById('ai-model-select').value;
+            
+            if (!key) {
+                logSys("API Key Required for Theme AI.", true);
                 return;
             }
-            if (!db) {
-                logSys("Cloud services unavailable in this environment.", true);
-                return;
-            }
+            if (!themeQuery) return;
 
             const btn = document.getElementById('sync-vault-btn');
-            const originalText = btn.textContent;
-            btn.textContent = "...";
             btn.disabled = true;
+            btn.textContent = "...";
 
             try {
-                let user = auth.currentUser;
-                if (!user) {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await auth.signInWithCustomToken(__initial_auth_token);
-                    } else {
-                        await auth.signInAnonymously();
-                    }
-                    user = auth.currentUser;
-                }
+                const systemPrompt = "You are a CSS theme generator. Given a theme concept, return ONLY a JSON object. " + 
+                                    "Keys: 'accent' (main UI color), 'accentHover', 'gradientStart', 'gradientMid', 'gradientEnd' (3-color tri-gradient), " +
+                                    "'highlight' (transparent color for code highlights), 'indicator' (pulse color), " +
+                                    "'aiSendBtn' (specific color for main AI button), 'exportBtn' (specific color for export button), " +
+                                    "'labelColor' (color for setting labels), 'descColor' (color for setting descriptions). " +
+                                    "Do not include text/markdown. Ensure colors contrast well with dark backgrounds.";
+                const payload = {
+                    contents: [{ parts: [{ text: `Theme concept: ${themeQuery}` }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    generationConfig: { responseMimeType: "application/json" }
+                };
 
-                if (!user) throw new Error("Authentication failed");
-
-                const docRef = db.doc(`artifacts/${appId}/public/data/vaults/${code}`);
-                const docSnap = await docRef.get();
-
-                if (docSnap.exists) {
-                    const data = docSnap.data();
-                    document.getElementById('user-api-key').value = data.apiKey || "";
-                    document.getElementById('base-prompt-input').value = data.instructions || "";
-                    document.getElementById('ai-model-select').value = data.model || currentModel;
-                    showToast("Vault Restored");
-                } else {
-                    await docRef.set({
-                        apiKey: document.getElementById('user-api-key').value,
-                        instructions: document.getElementById('base-prompt-input').value,
-                        model: document.getElementById('ai-model-select').value,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    showToast("Vault Created/Updated");
-                }
+                const res = await fetchWithRetry(selectedModel, key, payload);
+                const data = await res.json();
                 
-                currentVaultCode = code;
-                localStorage.setItem('webforge_vault_code', code);
+                if (!data.candidates || !data.candidates[0]) {
+                   throw new Error(data.error?.message || "Invalid API response structure.");
+                }
+
+                const colors = JSON.parse(data.candidates[0].content.parts[0].text);
+
+                // Apply Theme
+                const styleSheet = document.getElementById('theme-styles');
+                const themeCss = `
+                    .theme-bg-accent { background-color: ${colors.accent} !important; }
+                    .theme-bg-accent:hover { background-color: ${colors.accentHover} !important; }
+                    .theme-text-accent { color: ${colors.accent} !important; }
+                    .theme-border-accent { border-color: ${colors.accent} !important; }
+                    .text-gradient-ultra { 
+                        background: linear-gradient(to right, ${colors.gradientStart}, ${colors.gradientMid}, ${colors.gradientEnd}) !important;
+                        -webkit-background-clip: text !important;
+                        -webkit-text-fill-color: transparent !important;
+                    }
+                    .smart-range-line { background-color: ${colors.highlight} !important; border-left-color: ${colors.accent} !important; }
+                    .gutter-num-active { color: ${colors.accent} !important; }
+                    #smart-range-indicator { color: ${colors.indicator} !important; }
+                    .theme-ai-send-override { background-color: ${colors.aiSendBtn || colors.accent} !important; }
+                    .theme-export-override { background-color: ${colors.exportBtn || colors.accent} !important; }
+                    .theme-engine-label { color: ${colors.labelColor || '#818cf8'} !important; }
+                    .theme-engine-desc { color: ${colors.descColor || '#64748b'} !important; }
+                `;
+                
+                const existingExtra = document.getElementById('dynamic-theme');
+                if (existingExtra) existingExtra.remove();
+                const style = document.createElement('style');
+                style.id = 'dynamic-theme';
+                style.textContent = themeCss;
+                document.head.appendChild(style);
+
+                currentVaultCode = themeQuery;
+                localStorage.setItem('webforge_vault_code', themeQuery);
+                showToast(`Theme "${themeQuery}" Applied`);
             } catch (err) {
-                logSys(`Vault Error: ${err.message}`, true);
+                logSys(`Theme AI Error: ${err.message}`, true);
             } finally {
-                btn.textContent = originalText;
+                btn.textContent = "Update Theme";
                 btn.disabled = false;
             }
         };
@@ -626,7 +641,6 @@
                 aiAbortController.abort();
                 aiBtn.classList.remove('ai-working');
                 document.getElementById('ai-status-text').textContent = "Idle";
-                logSys("AI Task Terminated due to Import");
             }
             document.getElementById('file-input').click();
         };
@@ -736,19 +750,7 @@
                 currentVaultCode = savedVaultCode;
                 document.getElementById('vault-code').value = savedVaultCode;
             }
-
-            if (auth) {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await auth.signInWithCustomToken(__initial_auth_token);
-                    } else {
-                        await auth.signInAnonymously();
-                    }
-                } catch (e) {
-                    console.error("Firebase Auth Error:", e);
-                }
-            }
         };
     </script>
 </body>
-            </html>
+    </html>
