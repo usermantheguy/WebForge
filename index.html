@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebForge IDE - Ultra Pro</title>
+    <title>WebForge - Ultra</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@0.447.0/dist/umd/lucide.min.js"></script>
     <!-- Use Compat version for global 'firebase' object support -->
@@ -250,12 +250,19 @@
         let userProvidedKey = "";
         let currentVaultCode = "";
 
-        // Firebase Configuration Parsing
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // ENVIRONMENT GUARDS: Safely initialize Firebase and external variables
+        let app, auth, db, appId;
+        try {
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            if (firebaseConfig) {
+                app = firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                db = firebase.firestore();
+            }
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        } catch (e) {
+            console.warn("Cloud environment variables missing. Firebase features disabled.", e);
+        }
 
         const getEffectiveApiKey = () => {
             return userProvidedKey && userProvidedKey.trim() !== "" ? userProvidedKey.trim() : null;
@@ -551,6 +558,10 @@
                 showToast("Enter a vault code first");
                 return;
             }
+            if (!db) {
+                logSys("Cloud services unavailable in this environment.", true);
+                return;
+            }
 
             const btn = document.getElementById('sync-vault-btn');
             const originalText = btn.textContent;
@@ -726,16 +737,18 @@
                 document.getElementById('vault-code').value = savedVaultCode;
             }
 
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await auth.signInWithCustomToken(__initial_auth_token);
-                } else {
-                    await auth.signInAnonymously();
+            if (auth) {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await auth.signInWithCustomToken(__initial_auth_token);
+                    } else {
+                        await auth.signInAnonymously();
+                    }
+                } catch (e) {
+                    console.error("Firebase Auth Error:", e);
                 }
-            } catch (e) {
-                console.error("Firebase Auth Error:", e);
             }
         };
     </script>
 </body>
-                        </html>
+            </html>
